@@ -1,1 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zeros</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>0</text></svg>">
+<style>
+  :root {
+    --paper: #e9eef1;
+    --ink: #14232b;
+    --faint: #c3d0d6;
+    --accent: #0f6e8c;
+    --accent-ink: #ffffff;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #101a1f;
+      --ink: #e4edf0;
+      --faint: #25363e;
+      --accent: #5cc3e0;
+      --accent-ink: #08161b;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    overflow: hidden;
+    position: relative;
+  }
+  .field {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    color: var(--faint);
+    font-size: 22px;
+    line-height: 1.15;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow: hidden;
+    user-select: none;
+    z-index: 0;
+  }
+  main {
+    position: relative;
+    z-index: 1;
+    margin: 0 auto;
+    width: min(32rem, calc(100% - 3rem));
+    padding: 2rem;
+    background: var(--paper);
+    outline: 2px solid var(--ink);
+  }
+  h1 {
+    margin: 0 0 .75rem;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -.02em;
+  }
+  p { margin: 0 0 1.5rem; line-height: 1.55; max-width: 60ch; }
+  label { display: block; font-size: .9rem; margin-bottom: .4rem; }
+  .row { display: flex; gap: .75rem; flex-wrap: wrap; align-items: stretch; }
+  input[type="number"] {
+    width: 8rem;
+    padding: .7rem .8rem;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 2px solid var(--ink);
+    border-radius: 0;
+  }
+  button {
+    flex: 1 1 12rem;
+    padding: .7rem 1.1rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .6; cursor: progress; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  #status { min-height: 1.4em; margin: 1rem 0 0; font-size: .9rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <pre class="field" id="field" aria-hidden="true"></pre>
 
+  <main>
+    <h1>A file of zeros</h1>
+    <p>Saves a plain text file that contains only the character 0, repeated. No line breaks, nothing else. It’s built in your browser, so nothing is uploaded.</p>
+
+    <label for="mb">File size in MB</label>
+    <div class="row">
+      <input id="mb" type="number" min="1" max="2000" step="1" value="100" inputmode="numeric">
+      <button id="save" type="button">Save zeros.txt</button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+    <noscript><p>This page needs JavaScript turned on to build the file.</p></noscript>
+  </main>
+
+<script>
+(function () {
+  // Decorative background of zeros
+  document.getElementById('field').textContent = '0'.repeat(12000);
+
+  var MB = 1024 * 1024;
+  var btn = document.getElementById('save');
+  var input = document.getElementById('mb');
+  var statusEl = document.getElementById('status');
+
+  btn.addEventListener('click', function () {
+    var mb = Math.floor(Number(input.value));
+    if (!mb || mb < 1 || mb > 2000) {
+      statusEl.textContent = 'Enter a size between 1 and 2000 MB.';
+      return;
+    }
+    btn.disabled = true;
+    statusEl.textContent = 'Building ' + mb + ' MB file…';
+
+    // One 1 MB chunk of "0" (byte 0x30), reused mb times
+    var chunk = new Uint8Array(MB).fill(48);
+    var parts = new Array(mb);
+    for (var i = 0; i < mb; i++) parts[i] = chunk;
+
+    try {
+      var blob = new Blob(parts, { type: 'text/plain' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'zeros.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      statusEl.textContent = 'Saved zeros.txt (' + mb + ' MB, ' + (mb * MB).toLocaleString() + ' characters).';
+    } catch (e) {
+      statusEl.textContent = 'Couldn’t build a file that large here. Try a smaller size.';
+    }
+    btn.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>
